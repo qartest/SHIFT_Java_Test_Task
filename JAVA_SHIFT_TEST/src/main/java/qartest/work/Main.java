@@ -82,7 +82,7 @@ public class Main {
             } catch (FileNotFoundException e) {
                 System.out.println("Файл не открыт. Имя файла - " + name);
             } catch (IOException e){
-                System.out.println("Ошибка в прочтении строки файла .Имя файла - " + name);
+                System.out.println("Ошибка в прочтении строки файла. Имя файла - " + name);
             }
         }
 
@@ -92,59 +92,57 @@ public class Main {
     }
 
     public static void readArgs(String[] args){
-        try{
-            Iterator<String> iter = Arrays.stream(args).iterator();
-            String nowString;
+        Iterator<String> iter = Arrays.stream(args).iterator();
+        String nowString;
 
-            while (iter.hasNext()){
-                nowString = iter.next();
+        while (iter.hasNext()){
+            nowString = iter.next();
 
-                switch (nowString) {
-                    case "-p" -> {
-
-                        if (!iter.hasNext())
-                            throw new InputException("Ошибка: Нет аргумента для -p");
-                        prefix = iter.next();
+            switch (nowString) {
+                case "-p" -> prefix = iter.hasNext() ? iter.next() : "";
+                case "-o" -> {
+                    if (!iter.hasNext()) {
+                        System.out.println("Для опции -o требуется путь");
+                        continue;
                     }
-                    case "-o" -> {
+                    Path maybePath = Paths.get(iter.next());
 
-                        if (!iter.hasNext())
-                            throw new InputException("Ошибка: Нет аргумента для -o");
-
-                        path = Paths.get(iter.next());
-                        if (!Files.isDirectory(path)) {
-                            throw new InputException("Указанный путь не является директорией");
-                        }
-                        if (!Files.isWritable(path)) {
-                            throw new InputException("Нет прав на запись в директорию");
-                        }
+                    if (!Files.exists(maybePath)) {
+                        System.out.println("Путь не существует: " + maybePath);
+                        continue;
                     }
-                    case "-a" -> append = true;
-                    case "-s" -> minimalStatic = true;
-                    case "-f" -> fullStatic = true;
-                    default -> fileNames.add(nowString);
+                    if (!Files.isDirectory(maybePath)) {
+                        System.out.println("Указанный путь не является директорией: " + maybePath);
+                        continue;
+                    }
+                    if (!Files.isWritable(maybePath)) {
+                        System.out.println("Нет прав на запись в директорию: " + maybePath);
+                        continue;
+                    }
+                    path = maybePath;
                 }
+                case "-a" -> append = true;
+                case "-s" -> minimalStatic = true;
+                case "-f" -> fullStatic = true;
+                default -> fileNames.add(nowString);
             }
-
-        } catch(InputException e){
-            System.out.println(e.getMessage());
-            System.exit(1);
-        }catch (Exception e){
-            System.out.println(e.getMessage());
-            System.exit(2);
         }
     }
 
 
-    public static BufferedWriter openBuffer(File file) throws IOException {
-        if(!file.exists()){
-            file.createNewFile();
-            if(append){
-                System.out.println("Проблема с добавлением данных в файл. Файла с именем - " + file.getAbsolutePath() + " не существует. Создал новый файл");
+    public static BufferedWriter openBuffer(File file){
+        try{
+            if(!file.exists()){
+                file.createNewFile();
+                if(append){
+                    System.out.println("Проблема с добавлением данных в файл. Файла с именем - " + file.getAbsolutePath() + " не существует. Создал новый файл");
+                }
             }
+            return new BufferedWriter(new FileWriter(file, append));
+        } catch (IOException e){
+            System.out.println("Не удалось создать или открыть файл: " + file.getAbsolutePath());
+            throw new RuntimeException();
         }
-        return new BufferedWriter(new FileWriter(file, append));
-
     }
 
     private static void closeFiles(){
@@ -152,6 +150,7 @@ public class Main {
             try {
                 INTEGER_OUTPUT.close();
             } catch (IOException e) {
+                System.out.println("Не удалось закрыть файл вывода: " + INTEGER_FILE.getAbsolutePath());
                 throw new RuntimeException(e);
             }
         }
@@ -160,6 +159,7 @@ public class Main {
             try{
                 FLOAT_OUTPUT.close();
             }catch (IOException e) {
+                System.out.println("Не удалось закрыть файл вывода: " + FLOAT_FILE.getAbsolutePath());
                 throw new RuntimeException(e);
             }
         }
@@ -168,6 +168,7 @@ public class Main {
             try {
                 STRING_OUTPUT.close();
             }catch (IOException e) {
+                System.out.println("Не удалось закрыть файл вывода: " + STRING_FILE.getAbsolutePath());
                 throw new RuntimeException(e);
             }
         }
